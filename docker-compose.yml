@@ -2,7 +2,7 @@ version: '3.9'
 services:
     # databases
     postgis:
-        image: valtimo-academy-postgis:0.0.9
+        image: ritense/valtimo-academy-postgis:0.0.9
         container_name: valtimo-academy-postgis
         platform: linux/amd64
         ports:
@@ -12,7 +12,7 @@ services:
             - POSTGRES_PASSWORD=postgres
             - PGDATA=/data
     postgres:
-        image: valtimo-academy-postgres:0.0.7
+        image: ritense/valtimo-academy-postgres:0.0.7
         container_name: valtimo-academy-postgres
         platform: linux/amd64
         ports: 
