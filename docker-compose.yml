@@ -22,6 +22,28 @@ services:
             - POSTGRES_PASSWORD=postgres
             - PGDATA=/data
             
+    mysql:
+        image: mysql/mysql-server:8.0.28-1.2.7-server # version of oracle managed image that works on x86 and arm64
+        container_name: valtimo-academy-mysql
+        ports:
+            - "3306:3306"
+        environment:
+            MYSQL_ROOT_PASSWORD: password
+            MYSQL_DATABASE: gzac
+            MYSQL_USER: gzac
+            MYSQL_PASSWORD: password
+            MYSQL_ROOT_HOST: "%"
+        command: [
+                "--default-authentication-plugin=mysql_native_password",
+                "--lower_case_table_names=1",
+                "--collation-server=utf8mb4_unicode_ci",
+                "--character-set-server=utf8mb4",
+                "--explicit_defaults_for_timestamp",
+                "--ssl=false",
+                "--innodb_flush_method=O_DIRECT",
+                "--sql_mode=NO_ENGINE_SUBSTITUTION"
+        ]
+            
     #hulp services
     redis:
         image: redis:6.2.6
@@ -213,3 +235,32 @@ services:
             DB_ADDR: postgres
             DB_USER: postgres
             DB_PASSWORD: postgres
+    gzac-backend:
+        image: valtimo-academy-gzac-backend:0.0.4
+        container_name: valtimo-academy-gzac-backend
+        ports:
+            - "8080:8080"
+        environment:
+            SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/gzac
+            SPRING_DATASOURCE_USERNAME: gzac
+            SPRING_DATASOURCE_PASSWORD: password
+            VALTIMO_JWT_SECRET: MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAooyECQIi6v4TLKOYWwXClDhJcrGcGfKZj7LQIgY/Ajm2nAKv5kiZRoS8GzMzIGKkkilAJyWQCoKlP//azHqzIxO6WZWCqGFxd04vK5JYujsiMMTNvTggfFSM7VxbzU/wv+aAEvBaGUMYp2Oamn5szzYzkzsowujvDZp+CE8ryZWTVmA+8WZE4aoU6VzfXmMDmPxvRXvktPRsJkA7hkv65TTJwUZF38goRg62kRD0hOP1sIy6vwKDSkjafLV1bYNBRiWXNReJNBXauhy74GeiHODGrI62NwUJXSgZ62cViPt6cx/3A7VBPLpEPnpnlZcIDfsFpSUuNEXc7HoLRuldbQIDAQAB
+            KEYCLOAK_REALM: valtimo
+            KEYCLOAK_AUTH_SERVER_URL: https://localhost:8081/auth
+            KEYCLOAK_RESOURCE: valtimo-m2m-client
+            KEYCLOAK_CREDENTIALS_SECRET: 6ef6ca16-6b86-482a-a3d9-0561704c1db9
+    gzac-frontend:
+        image: valtimo-academy-gzac-frontend:0.0.1
+        container_name: valtimo-academy-gzac-frontend
+        ports:
+            - "4200:80"
+        environment:    
+            API_URI: http://localhost:8080/api/ 
+            MOCK_API_URI: http://localhost:8080/mock-api/ 
+            SWAGGER_URI: http://localhost:8080/v2/api-docs 
+            KEYCLOAK_URL: http://localhost:8081/auth
+            KEYCLOAK_REALM: valtimo
+            KEYCLOAK_CLIENT_ID: valtimo-console
+            KEYCLOAK_REDIRECT_URI: http://localhost:4200
+            KEYCLOAK_LOGOUT_REDIRECT_URI: http://localhost:4200
+            WHITELISTED_DOMAIN: localhost:4200
