@@ -12,7 +12,7 @@ services:
             - POSTGRES_PASSWORD=postgres
             - PGDATA=/data
     postgres:
-        image: ritense/valtimo-academy-postgres:0.0.7
+        image: ritense/valtimo-academy-postgres:0.0.8
         container_name: valtimo-academy-postgres
         platform: linux/amd64
         ports: 
@@ -43,6 +43,8 @@ services:
                 "--innodb_flush_method=O_DIRECT",
                 "--sql_mode=NO_ENGINE_SUBSTITUTION"
         ]
+        volumes:
+            - gzac-database:/var/lib/mysql # persist data even if container shuts down
             
     #hulp services
     redis:
@@ -141,88 +143,6 @@ services:
         container_name: valtimo-academy-opennotificaties-celery
         environment: *notificaties-env
         command: /celery_worker.sh
-    sdk-openformulieren:
-        image: openformulieren/open-forms-sdk:sprint-10
-        container_name: valtimo-academy-sdk-openformulieren
-        platform: linux/amd64
-        ports:
-            - "8005:80"
-    web-openformulieren:
-        image: openformulieren/open-forms:sprint-10
-        container_name: valtimo-academy-web-openformulieren
-        platform: linux/amd64
-        environment: &web_env
-            - CORS_ALLOW_ALL_ORIGINS=true
-            - DJANGO_SETTINGS_MODULE=openforms.conf.docker
-            - SECRET_KEY=${SECRET_KEY:-@r0w-0(&apjfde5fl6h23!vn)r1ldkp1c_d2#!$$did4z5hun4a}
-            - DB_NAME=openformulieren
-            - DB_USER=postgres
-            - DB_PASSWORD=postgres
-            - DB_HOST=postgres
-            - CACHE_DEFAULT=redis:6379/0
-            - CACHE_AXES=redis:6379/0
-            - ALLOWED_HOSTS=*
-            - CELERY_BROKER_URL=redis://redis:6379/0
-            - CELERY_RESULT_BACKEND=redis://redis:6379/0
-            - CELERY_LOGLEVEL=DEBUG
-            - SDK_BASE_URL=${SDK_BASE_URL:-http://localhost:8005}
-            - OPENFORMS_LOCATION_CLIENT=${OPENFORMS_LOCATION_CLIENT:-openforms.contrib.bag.client.BAGClient}
-            # Needed for Celery Flower to match the TIME_ZONE configured in the
-            # settings used by workers and beat containers.
-            - TZ=Europe/Amsterdam
-            - TWO_FACTOR_FORCE_OTP_ADMIN=False
-            - TWO_FACTOR_PATCH_ADMIN=False
-        ports:
-            - "8003:8000"
-        depends_on:
-            - postgres
-            - sdk-openformulieren
-    celery-openformulieren:
-        image: openformulieren/open-forms:sprint-10
-        container_name: valtimo-academy-celery-openformulieren
-        platform: linux/amd64
-        environment: *web_env
-        command: /celery_worker.sh
-        depends_on:
-            - postgres
-            - redis
-    celery-beat:
-        image: openformulieren/open-forms:sprint-10
-        container_name: valtimo-academy-celery-beat
-        platform: linux/amd64
-        environment: *web_env
-        command: /celery_beat.sh
-        depends_on:
-            - postgres
-            - redis
-    celery-flower:
-        image: mher/flower:0.9.7
-        container_name: valtimo-academy-celery-flower
-        platform: linux/amd64
-        environment: *web_env
-        ports:
-            - "5555:5555"
-        depends_on:
-            - redis
-            - celery-openformulieren
-    web-openklant:
-        image: maykinmedia/open-klant:latest
-        container_name: valtimo-academy-web-openklant
-        platform: linux/amd64
-        environment:
-            - DJANGO_SETTINGS_MODULE=openklant.conf.docker
-            - SECRET_KEY=${SECRET_KEY:-django-insecure-$$8s@b*ds4t84-q_2#c0j0506@!l2q6r5_pq5e!vm^_9c*#^66b}
-            - DB_NAME=openklant
-            - DB_USER=postgres
-            - DB_PASSWORD=postgres
-            - DB_HOST=postgres
-            - CACHE_DEFAULT=redis:6379/0
-            - CACHE_AXES=redis:6379/0
-            - ALLOWED_HOSTS=*
-        ports:
-            - "8006:8000"
-        depends_on:
-            - postgres
     keycloak:
         image: jboss/keycloak:15.0.0
         container_name: valtimo-academy-keycloak
@@ -235,11 +155,14 @@ services:
             DB_ADDR: postgres
             DB_USER: postgres
             DB_PASSWORD: postgres
+        user: root
     gzac-backend:
         image: ritense/valtimo-academy-gzac-backend:0.0.1
         container_name: valtimo-academy-gzac-backend
         ports:
             - "8080:8080"
+        depends_on:
+            - mysql
         environment:
             SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/gzac
             SPRING_DATASOURCE_USERNAME: gzac
@@ -258,9 +181,11 @@ services:
             API_URI: http://localhost:8080/api/ 
             MOCK_API_URI: http://localhost:8080/mock-api/ 
             SWAGGER_URI: http://localhost:8080/v2/api-docs 
-            KEYCLOAK_URL: http://localhost:8081/auth
+            KEYCLOAK_URL: http://keycloak.k8s.academy.gzac.nl/auth
             KEYCLOAK_REALM: valtimo
             KEYCLOAK_CLIENT_ID: valtimo-console
             KEYCLOAK_REDIRECT_URI: http://localhost:4200
             KEYCLOAK_LOGOUT_REDIRECT_URI: http://localhost:4200
             WHITELISTED_DOMAIN: localhost:4200
+volumes:
+    gzac-database:
