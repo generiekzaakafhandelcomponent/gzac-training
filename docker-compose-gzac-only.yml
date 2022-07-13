@@ -28,6 +28,7 @@ services:
         container_name: valtimo-academy-gzac-backend
         ports:
             - "8080:8080"
+            - "8000:8000"
         depends_on:
             - mysql
         environment:
@@ -40,7 +41,7 @@ services:
             KEYCLOAK_RESOURCE: valtimo-m2m-client
             KEYCLOAK_CREDENTIALS_SECRET: 6ef6ca16-6b86-482a-a3d9-0561704c1db9
     gzac-frontend:
-        image: ritense/valtimo-academy-gzac-frontend:0.0.2
+        image: ritense/valtimo-academy-gzac-frontend:0.0.4
         container_name: valtimo-academy-gzac-frontend
         ports:
             - "4200:80"
