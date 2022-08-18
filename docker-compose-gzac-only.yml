@@ -24,7 +24,7 @@ services:
         volumes:
             - gzac-database:/var/lib/mysql # persist data even if container shuts down
     gzac-backend:
-        image: ritense/valtimo-academy-gzac-backend:0.0.1
+        image: ritense/valtimo-academy-gzac-backend:0.0.2
         container_name: valtimo-academy-gzac-backend
         ports:
             - "8080:8080"
